@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32-C6 Advanced Provisioning</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 450px; margin: auto; background: #f9f9f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0 14px 0; box-sizing: border-box; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        label { font-weight: bold; font-size: 14px; color: #333; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #status { font-weight: bold; color: green; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Field Node Configuration</h2>
+        
+        <label>Device Settings</label>
+        <input type="text" id="devName" placeholder="e.g. Tank 1, Pump House">
+        <input type="text" id="ssid" placeholder="Wi-Fi SSID">
+        <input type="password" id="pass" placeholder="Wi-Fi Password">
+        
+        <label for="interval">Reporting Interval</label>
+        <select id="interval">
+            <option value="300">5 Minutes</option>
+            <option value="900">15 Minutes</option>
+            <option value="3600" selected>1 Hour</option>
+        </select>
+
+        <label>Sensor Port Mapping</label>
+        
+        <label for="s1">S1 (Analog):</label>
+        <select id="s1">
+            <option value="Temperature">Temperature</option>
+            <option value="Dissolved Oxygen">Dissolved Oxygen</option>
+            <option value="Water Flow">Water Flow</option>
+            <option value="Air Flow">Air Flow</option>
+        </select>
+
+        <label for="s2">S2 (Analog):</label>
+        <select id="s2"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen" selected>Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
+
+        <label for="s3">S3 (Switch):</label>
+        <select id="s3"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow" selected>Water Flow</option><option value="Air Flow">Air Flow</option></select>
+
+        <label for="s4">S4 (Switch):</label>
+        <select id="s4"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow" selected>Air Flow</option></select>
+
+        <button onclick="sendConfiguration()">Program System</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_WEB_APP_URL";
+        const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
+        const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
+        const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
+        const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
+
+        async function sendConfiguration() {
+            const devName = document.getElementById('devName').value || "Tank Node";
+            const ssid = document.getElementById('ssid').value;
+            const pass = document.getElementById('pass').value;
+            const interval = document.getElementById('interval').value;
+            const s1 = document.getElementById('s1').value;
+            const s2 = document.getElementById('s2').value;
+            const s3 = document.getElementById('s3').value;
+            const s4 = document.getElementById('s4').value;
+            const status = document.getElementById('status');
+
+            try {
+                status.style.color = "orange";
+                status.innerText = "Pairing via Bluetooth...";
+                
+                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+
+                // Fetch device hardware MAC directly via Bluetooth device name or standard parameters
+                // For privacy/sandboxing browser reasons, we derive or pass the ID 
+                status.innerText = "Programming hardware registers...";
+                const ssidChar = await service.getCharacteristic(CHAR_SSID_UUID);
+                await ssidChar.writeValue(new TextEncoder().encode(ssid));
+
+                const passChar = await service.getCharacteristic(CHAR_PASS_UUID);
+                await passChar.writeValue(new TextEncoder().encode(pass));
+
+                const intChar = await service.getCharacteristic(CHAR_INT_UUID);
+                await intChar.writeValue(new TextEncoder().encode(interval));
+                
+                status.innerText = "Syncing sensor mapping to cloud...";
+                
+                // Construct a URL to sync this map cleanly to the Google Sheet tab
+                let macMockAddress = device.name; // In real field use, use device configurations
+                let cloudUrl = `${GOOGLE_SCRIPT_URL}?action=set_config&mac=${encodeURIComponent(device.id)}&name=${encodeURIComponent(devName)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
+                
+                await fetch(cloudUrl, { mode: 'no-cors' });
+
+                status.style.color = "green";
+                status.innerText = "Success! Complete System Setup Finished.";
+                await server.disconnect();
+            } catch (error) {
+                status.style.color = "red";
+                status.innerText = "Error: " + error;
+            }
+        }
+    </script>
+</body>
+</html>
