@@ -1,66 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EcoSync Provisioning</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; background: #f9f9f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 12px; margin: 6px 0 14px 0; box-sizing: border-box; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        label { font-weight: bold; font-size: 14px; color: #333; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #status { font-weight: bold; color: green; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>EcoSync Network Config</h2>
+        <label>Enter Local Wi-Fi Credentials</label>
+        <input type="text" id="ssid" placeholder="Wi-Fi Network Name (SSID)">
+        <input type="password" id="pass" placeholder="Wi-Fi Password">
+        <button onclick="sendConfiguration()">Connect & Program Node</button>
+        <div id="status"></div>
+    </div>
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
         const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
         const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
         const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
-        const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
-
         async function sendConfiguration() {
-            const devName = document.getElementById('devName').value || "EcoSync Node";
-            const devLoc = document.getElementById('devLoc').value || "Unmapped Field";
             const ssid = document.getElementById('ssid').value;
             const pass = document.getElementById('pass').value;
-            const interval = document.getElementById('interval').value;
-            const s1 = document.getElementById('s1').value;
-            const s2 = document.getElementById('s2').value;
-            const s3 = document.getElementById('s3').value;
-            const s4 = document.getElementById('s4').value;
             const status = document.getElementById('status');
-
-            if (!ssid || !pass) {
-                status.style.color = "red";
-                status.innerText = "Error: Wi-Fi Name and Password are required.";
-                return;
-            }
-
+            if (!ssid || !pass) { status.style.color = "red"; status.innerText = "Error: Fields required."; return; }
             try {
-                status.style.color = "orange";
-                status.innerText = "Pairing with physical node...";
-                
+                status.style.color = "orange"; status.innerText = "Pairing with node...";
                 const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
-
-                status.innerText = "Writing Wi-Fi to flash memory...";
+                status.innerText = "Writing network credentials...";
                 const ssidChar = await service.getCharacteristic(CHAR_SSID_UUID);
                 await ssidChar.writeValue(new TextEncoder().encode(ssid));
-
                 const passChar = await service.getCharacteristic(CHAR_PASS_UUID);
                 await passChar.writeValue(new TextEncoder().encode(pass));
-
-                const intChar = await service.getCharacteristic(CHAR_INT_UUID);
-                await intChar.writeValue(new TextEncoder().encode(interval));
-                
-                status.innerText = "Syncing config to cloud sheet...";
-                
-                // Derive unique MAC token from paired hardware identifier
-                let cleanedMacToken = device.id.replace(/[^a-zA-Z0-9]/g, "").slice(-12).match(/.{1,2}/g).join(":").toUpperCase();
-                let cloudUrl = `${GOOGLE_SCRIPT_URL}?action=set_config&mac=${encodeURIComponent(cleanedMacToken)}&name=${encodeURIComponent(devName)}&location=${encodeURIComponent(devLoc)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
-                
-                // Use standard image ping fallback to pass data cleanly past CORS mobile limitations
-                await new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = img.onerror = resolve;
-                    img.src = cloudUrl;
-                    setTimeout(resolve, 2000); // 2 second max wait fallback
-                });
-
-                status.style.color = "green";
-                status.innerText = "Success! Node configured & synced.";
+                status.style.color = "green"; status.innerText = "Success! Credentials programmed.";
                 await server.disconnect();
-            } catch (error) {
-                status.style.color = "red";
-                status.innerText = "Error: " + error;
-            }
+            } catch (error) { status.style.color = "red"; status.innerText = "Error: " + error; }
         }
     </script>
+</body>
+</html>
