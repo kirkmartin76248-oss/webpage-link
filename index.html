@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ESP32-C6 Advanced Provisioning</title>
+    <title>EcoSync Universal Provisioning</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 450px; margin: auto; background: #f9f9f9; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -13,40 +13,32 @@
 </head>
 <body>
     <div class="card">
-        <h2>Field Node Configuration</h2>
+        <h2>EcoSync Device Deployment</h2>
         
-        <label>Device Settings</label>
-        <input type="text" id="devName" placeholder="e.g. Tank 1, Pump House">
-        <input type="text" id="ssid" placeholder="Wi-Fi SSID">
+        <label>Device Deployment Details</label>
+        <input type="text" id="devName" placeholder="e.g. Tank 1, Pump Station">
+        <input type="text" id="devLoc" placeholder="e.g. North Pasture, Bay Buoy 3">
+        <input type="text" id="ssid" placeholder="Wi-Fi Network Name (SSID)">
         <input type="password" id="pass" placeholder="Wi-Fi Password">
         
-        <label for="interval">Reporting Interval</label>
+        <label for="interval">Reporting Schedule</label>
         <select id="interval">
-            <option value="300">5 Minutes</option>
+            <option value="300">5 Minutes (Test Mode)</option>
             <option value="900">15 Minutes</option>
-            <option value="3600" selected>1 Hour</option>
+            <option value="3600" selected>1 Hour (Normal Operation)</option>
         </select>
 
-        <label>Sensor Port Mapping</label>
-        
-        <label for="s1">S1 (Analog):</label>
-        <select id="s1">
-            <option value="Temperature">Temperature</option>
-            <option value="Dissolved Oxygen">Dissolved Oxygen</option>
-            <option value="Water Flow">Water Flow</option>
-            <option value="Air Flow">Air Flow</option>
-        </select>
-
-        <label for="s2">S2 (Analog):</label>
+        <label>Port Configuration Maps</label>
+        <label for="s1">S1 (Analog Port):</label>
+        <select id="s1"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
+        <label for="s2">S2 (Analog Port):</label>
         <select id="s2"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen" selected>Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
-
-        <label for="s3">S3 (Switch):</label>
+        <label for="s3">S3 (Switch Port):</label>
         <select id="s3"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow" selected>Water Flow</option><option value="Air Flow">Air Flow</option></select>
-
-        <label for="s4">S4 (Switch):</label>
+        <label for="s4">S4 (Switch Port):</label>
         <select id="s4"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow" selected>Air Flow</option></select>
 
-        <button onclick="sendConfiguration()">Program System</button>
+        <button onclick="sendConfiguration()">Initialize System</button>
         <div id="status"></div>
     </div>
 
@@ -58,7 +50,8 @@
         const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
 
         async function sendConfiguration() {
-            const devName = document.getElementById('devName').value || "Tank Node";
+            const devName = document.getElementById('devName').value || "EcoSync Node";
+            const devLoc = document.getElementById('devLoc').value || "Unmapped Field";
             const ssid = document.getElementById('ssid').value;
             const pass = document.getElementById('pass').value;
             const interval = document.getElementById('interval').value;
@@ -70,15 +63,13 @@
 
             try {
                 status.style.color = "orange";
-                status.innerText = "Pairing via Bluetooth...";
+                status.innerText = "Pairing with physical node...";
                 
                 const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
 
-                // Fetch device hardware MAC directly via Bluetooth device name or standard parameters
-                // For privacy/sandboxing browser reasons, we derive or pass the ID 
-                status.innerText = "Programming hardware registers...";
+                status.innerText = "Writing parameters to flash memory...";
                 const ssidChar = await service.getCharacteristic(CHAR_SSID_UUID);
                 await ssidChar.writeValue(new TextEncoder().encode(ssid));
 
@@ -88,16 +79,16 @@
                 const intChar = await service.getCharacteristic(CHAR_INT_UUID);
                 await intChar.writeValue(new TextEncoder().encode(interval));
                 
-                status.innerText = "Syncing sensor mapping to cloud...";
+                status.innerText = "Uploading tracking configuration to cloud...";
                 
-                // Construct a URL to sync this map cleanly to the Google Sheet tab
-                let macMockAddress = device.name; // In real field use, use device configurations
-                let cloudUrl = `${GOOGLE_SCRIPT_URL}?action=set_config&mac=${encodeURIComponent(device.id)}&name=${encodeURIComponent(devName)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
+                // Derive unique identifier token window
+                let cleanedMacToken = device.id.replace(/[^a-zA-Z0-9]/g, "").slice(-12).match(/.{1,2}/g).join(":").toUpperCase();
+                let cloudUrl = `${GOOGLE_SCRIPT_URL}?action=set_config&mac=${encodeURIComponent(cleanedMacToken)}&name=${encodeURIComponent(devName)}&location=${encodeURIComponent(devLoc)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
                 
                 await fetch(cloudUrl, { mode: 'no-cors' });
 
                 status.style.color = "green";
-                status.innerText = "Success! Complete System Setup Finished.";
+                status.innerText = "Success! Node deployed and synced.";
                 await server.disconnect();
             } catch (error) {
                 status.style.color = "red";
