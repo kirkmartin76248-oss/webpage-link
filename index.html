@@ -1,47 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EcoSync Provisioning</title>
+    <title>EcoSync Pro Configurator</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; background: #f9f9f9; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin: 6px 0 14px 0; box-sizing: border-box; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; }
-        label { font-weight: bold; font-size: 14px; color: #333; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        #status { font-weight: bold; color: green; text-align: center; margin-top: 15px; }
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 450px; margin: auto; background: #f4f6f9; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0 16px 0; box-sizing: border-box; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        label { font-weight: bold; font-size: 14px; color: #444; }
+        button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #status { font-weight: bold; color: #555; text-align: center; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>EcoSync Network Config</h2>
-        <label>Enter Local Wi-Fi Credentials</label>
-        <input type="text" id="ssid" placeholder="Wi-Fi Network Name (SSID)">
+        <h2>EcoSync Deployment</h2>
+        
+        <label>Identity & Location</label>
+        <input type="text" id="devName" placeholder="e.g. Tank 1, Pond Pump">
+        <input type="text" id="devLoc" placeholder="e.g. West Field, Dock Station">
+        
+        <label>Network Link</label>
+        <input type="text" id="ssid" placeholder="Wi-Fi SSID">
         <input type="password" id="pass" placeholder="Wi-Fi Password">
-        <button onclick="sendConfiguration()">Connect & Program Node</button>
+        
+        <label for="interval">Initial Wake Interval</label>
+        <select id="interval">
+            <option value="300">5 Minutes (Testing)</option>
+            <option value="3600" selected>1 Hour (Standard)</option>
+        </select>
+
+        <label>Hardware Port Configurations</label>
+        <label for="s1">S1:</label>
+        <select id="s1"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
+        <label for="s2">S2:</label>
+        <select id="s2"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen" selected>Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
+        <label for="s3">S3:</label>
+        <select id="s3"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow" selected>Water Flow</option><option value="Air Flow">Air Flow</option></select>
+        <label for="s4">S4:</label>
+        <select id="s4"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow" selected>Air Flow</option></select>
+
+        <button onclick="sendConfiguration()">Initialize System Node</button>
         <div id="status"></div>
     </div>
+
     <script>
-        const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
-        const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
-        const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
+        const SERVICE_UUID     = "4fa15562-812d-4d40-8d38-92212354c001";
+        const CHAR_SSID_UUID   = "4fa15562-812d-4d40-8d38-92212354c002";
+        const CHAR_PASS_UUID   = "4fa15562-812d-4d40-8d38-92212354c003";
+        const CHAR_INT_UUID    = "4fa15562-812d-4d40-8d38-92212354c004";
+
         async function sendConfiguration() {
+            const name = document.getElementById('devName').value || "EcoSync Node";
+            const location = document.getElementById('devLoc').value || "Default Field";
             const ssid = document.getElementById('ssid').value;
             const pass = document.getElementById('pass').value;
+            const interval = document.getElementById('interval').value;
+            const s1 = document.getElementById('s1').value;
+            const s2 = document.getElementById('s2').value;
+            const s3 = document.getElementById('s3').value;
+            const s4 = document.getElementById('s4').value;
             const status = document.getElementById('status');
-            if (!ssid || !pass) { status.style.color = "red"; status.innerText = "Error: Fields required."; return; }
+
             try {
-                status.style.color = "orange"; status.innerText = "Pairing with node...";
+                status.style.color = "orange";
+                status.innerText = "Pairing via Bluetooth...";
                 const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
-                status.innerText = "Writing network credentials...";
-                const ssidChar = await service.getCharacteristic(CHAR_SSID_UUID);
-                await ssidChar.writeValue(new TextEncoder().encode(ssid));
-                const passChar = await service.getCharacteristic(CHAR_PASS_UUID);
-                await passChar.writeValue(new TextEncoder().encode(pass));
-                status.style.color = "green"; status.innerText = "Success! Credentials programmed.";
+
+                status.innerText = "Writing registers to flash memory...";
+                await (await service.getCharacteristic(CHAR_SSID_UUID)).writeValue(new TextEncoder().encode(ssid));
+                await (await service.getCharacteristic(CHAR_PASS_UUID)).writeValue(new TextEncoder().encode(pass));
+                await (await service.getCharacteristic(CHAR_INT_UUID)).writeValue(new TextEncoder().encode(interval));
+                
+                status.innerText = "Syncing system data profile to cloud sheet...";
+                let cleanedMac = device.id.replace(/[^a-zA-Z0-9]/g, "").slice(-12).match(/.{1,2}/g).join(":").toUpperCase();
+                
+                // Triggers background sheet registration directly from phone web parameters
+                let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(cleanedMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
+                
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = img.onerror = resolve;
+                    img.src = syncUrl;
+                    setTimeout(resolve, 2000);
+                });
+
+                status.style.color = "green";
+                status.innerText = "Success! Complete System Provisioned.";
                 await server.disconnect();
-            } catch (error) { status.style.color = "red"; status.innerText = "Error: " + error; }
+            } catch (error) {
+                status.style.color = "red";
+                status.innerText = "Error: " + error;
+            }
         }
     </script>
 </body>
