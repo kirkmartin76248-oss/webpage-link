@@ -2,75 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EcoSync Node Provisioning</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSync Node Provisioning Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 450px; margin: 30px auto; padding: 20px; background: #f4f7f6; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #333; text-align: center; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 13px; color: #555; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; background: #007BFF; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 450px; margin: 20px auto; padding: 15px; background: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #111; margin-bottom: 20px; font-size: 22px; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #444; }
+        input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: #fafafa; }
+        input:focus, select:focus { border-color: #007BFF; outline: none; background: #fff; }
+        button { width: 100%; background: #007BFF; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
         button:hover { background: #0056b3; }
-        #status { margin-top: 15px; text-align: center; font-weight: bold; font-size: 14px; }
+        #status { margin-top: 20px; text-align: center; font-weight: bold; font-size: 14px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
-    <h2>EcoSync Provisioning</h2>
-    
-    <div class="form-group">
-        <label for="ssid">Wi-Fi SSID</label>
-        <input type="text" id="ssid" placeholder="Enter Wi-Fi Name">
-    </div>
-    
-    <div class="form-group">
-        <label for="password">Wi-Fi Password</label>
-        <input type="password" id="password" placeholder="Enter Wi-Fi Password">
-    </div>
-    
-    <div class="form-group">
-        <label for="interval">Sleep Interval (Seconds)</label>
-        <input type="number" id="interval" value="60">
-    </div>
+    <div class="card">
+        <h2>EcoSync Provisioning</h2>
+        
+        <div class="form-group">
+            <label>Wi-Fi SSID (Network Name)</label>
+            <input type="text" id="ssid" placeholder="e.g. GO BUCKS">
+        </div>
+        
+        <div class="form-group">
+            <label>Wi-Fi Password</label>
+            <input type="password" id="password" placeholder="Enter network password">
+        </div>
+        
+        <div class="form-group">
+            <label>Sleep Reporting Interval (Seconds)</label>
+            <input type="number" id="interval" value="60">
+        </div>
 
-    <div class="form-group">
-        <label for="node_name">Sensor Name</label>
-        <input type="text" id="node_name" value="EcoSync Tank Node">
-    </div>
+        <div class="form-group">
+            <label>Sensor Identity Tag</label>
+            <input type="text" id="node_name" value="EcoSync Tank Node">
+        </div>
 
-    <div class="form-group">
-        <label for="node_location">Location</label>
-        <input type="text" id="node_location" value="Main Tank">
-    </div>
+        <div class="form-group">
+            <label>Location Placement Description</label>
+            <input type="text" id="node_location" value="Main Tank Alpha">
+        </div>
 
-    <div class="form-group">
-        <label for="s1_type">Sensor 1 Type</label>
-        <select id="s1_type"><option value="temperature">Temperature</option><option value="dissolved oxygen">Dissolved Oxygen</option><option value="water flow">Water Flow</option><option value="air flow">Air Flow</option></select>
-    </div>
-    <div class="form-group">
-        <label for="s2_type">Sensor 2 Type</label>
-        <select id="s2_type"><option value="dissolved oxygen">Dissolved Oxygen</option><option value="temperature">Temperature</option></select>
-    </div>
-    <div class="form-group">
-        <label for="s3_type">Sensor 3 Type</label>
-        <select id="s3_type"><option value="water flow">Water Flow</option><option value="temperature">Temperature</option></select>
-    </div>
-    <div class="form-group">
-        <label for="s4_type">Sensor 4 Type</label>
-        <select id="s4_type"><option value="air flow">Air Flow</option><option value="temperature">Temperature</option></select>
-    </div>
+        <div class="form-group">
+            <label>Sensor Port 1 Configuration</label>
+            <select id="s1_type"><option value="temperature">Temperature</option><option value="dissolved oxygen">Dissolved Oxygen</option><option value="water flow">Water Flow</option><option value="air flow">Air Flow</option></select>
+        </div>
+        <div class="form-group">
+            <label>Sensor Port 2 Configuration</label>
+            <select id="s2_type"><option value="dissolved oxygen">Dissolved Oxygen</option><option value="temperature">Temperature</option></select>
+        </div>
+        <div class="form-group">
+            <label>Sensor Port 3 Configuration</label>
+            <select id="s3_type"><option value="water flow">Water Flow</option><option value="temperature">Temperature</option></select>
+        </div>
+        <div class="form-group">
+            <label>Sensor Port 4 Configuration</label>
+            <select id="s4_type"><option value="air flow">Air Flow</option><option value="temperature">Temperature</option></select>
+        </div>
 
-    <button onclick="sendConfiguration()">Initialize & Provision Node</button>
-    
-    <div id="status"></div>
+        <button onclick="sendConfiguration()">Initialize & Provision Node</button>
+        <div id="status"></div>
+    </div>
 
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
-    const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
-    const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
-    const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
-    const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
-    const CHAR_MAC_UUID  = "4fa15562-812d-4d40-8d38-92212354c005";
+    const SERVICE_UUID     = "4fa15562-812d-4d40-8d38-92212354c001";
+    const CHAR_SSID_UUID   = "4fa15562-812d-4d40-8d38-92212354c002";
+    const CHAR_PASS_UUID   = "4fa15562-812d-4d40-8d38-92212354c003";
+    const CHAR_INT_UUID    = "4fa15562-812d-4d40-8d38-92212354c004";
+    const CHAR_MAC_UUID    = "4fa15562-812d-4d40-8d38-92212354c005";
 
     async function sendConfiguration() {
         const ssid = document.getElementById('ssid').value;
@@ -86,42 +90,43 @@
 
         try {
             status.style.color = "orange";
-            status.innerText = "Requesting Bluetooth Device...";
+            status.innerText = "Searching for ECOSYNC_NODE...";
             
             const device = await navigator.bluetooth.requestDevice({ 
                 filters: [{ services: [SERVICE_UUID] }],
                 optionalServices: [SERVICE_UUID]
             });
             
+            status.innerText = "Establishing secure GATT connection...";
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService(SERVICE_UUID);
 
-            status.innerText = "Reading true hardware MAC from ESP32...";
+            status.innerText = "Querying microcontroller physical MAC address...";
             const macChar = await service.getCharacteristic(CHAR_MAC_UUID);
             const macValue = await macChar.readValue();
             const trueHardwareMac = new TextDecoder().decode(macValue).trim().toUpperCase();
 
-            status.innerText = "Writing network credentials to ESP32...";
+            status.innerText = "Writing telemetry parameters to hardware flash memory...";
             await (await service.getCharacteristic(CHAR_SSID_UUID)).writeValue(new TextEncoder().encode(ssid));
             await (await service.getCharacteristic(CHAR_PASS_UUID)).writeValue(new TextEncoder().encode(pass));
             await (await service.getCharacteristic(CHAR_INT_UUID)).writeValue(new TextEncoder().encode(interval));
             
-            status.innerText = "Syncing node profile to cloud config...";
+            status.innerText = "Syncing network deployment profile to Google Cloud...";
             let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(trueHardwareMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
             
             await new Promise((resolve) => {
                 const img = new Image();
                 img.onload = img.onerror = resolve;
                 img.src = syncUrl;
-                setTimeout(resolve, 2000);
+                setTimeout(resolve, 2500);
             });
 
-            status.style.color = "green";
-            status.innerText = "Success! Node " + trueHardwareMac + " Provisioned.";
+            status.style.color = "#28a745";
+            status.innerText = `Success! True Node [${trueHardwareMac}] Synchronized & Operational.`;
             await server.disconnect();
         } catch (error) {
-            status.style.color = "red";
-            status.innerText = "Error: " + error.message;
+            status.style.color = "#dc3545";
+            status.innerText = "Execution Error: " + error.message;
         }
     }
 </script>
