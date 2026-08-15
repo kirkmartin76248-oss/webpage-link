@@ -1,63 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>EcoSync Pro Configurator</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 450px; margin: auto; background: #f4f6f9; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, select, button { width: 100%; padding: 12px; margin: 6px 0 16px 0; box-sizing: border-box; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; }
-        label { font-weight: bold; font-size: 14px; color: #444; }
-        button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        #status { font-weight: bold; color: #555; text-align: center; margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>EcoSync Deployment</h2>
-        
-        <label>Identity & Location</label>
-        <input type="text" id="devName" placeholder="e.g. Tank 1, Pond Pump">
-        <input type="text" id="devLoc" placeholder="e.g. West Field, Dock Station">
-        
-        <label>Network Link</label>
-        <input type="text" id="ssid" placeholder="Wi-Fi SSID">
-        <input type="password" id="pass" placeholder="Wi-Fi Password">
-        
-        <label for="interval">Reporting Schedule Interval</label>
-        <select id="interval">
-            <!-- Expanded Testing & Production Sleep Selections -->
-            <option value="60">1 Minute (Fast Debugging Only)</option>
-            <option value="300" selected>5 Minutes (Test Mode Baseline)</option>
-            <option value="600">10 Minutes</option>
-            <option value="900">15 Minutes</option>
-            <option value="1800">30 Minutes</option>
-            <option value="3600">1 Hour (Recommended Normal Operation)</option>
-            <option value="7200">2 Hours</option>
-            <option value="14400">4 Hours</option>
-            <option value="28800">8 Hours</option>
-            <option value="43200">12 Hours (Twice Daily Logging)</option>
-        </select>
-
-        <label>Hardware Port Configurations</label>
-        <label for="s1">S1:</label>
-        <select id="s1"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
-        <label for="s2">S2:</label>
-        <select id="s2"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen" selected>Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow">Air Flow</option></select>
-        <label for="s3">S3:</label>
-        <select id="s3"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow" selected>Water Flow</option><option value="Air Flow">Air Flow</option></select>
-        <label for="s4">S4:</label>
-        <select id="s4"><option value="Temperature">Temperature</option><option value="Dissolved Oxygen">Dissolved Oxygen</option><option value="Water Flow">Water Flow</option><option value="Air Flow" selected>Air Flow</option></select>
-
-        <button onclick="sendConfiguration()">Initialize System Node</button>
-        <div id="status"></div>
-    </div>
-
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
         const SERVICE_UUID     = "4fa15562-812d-4d40-8d38-92212354c001";
         const CHAR_SSID_UUID   = "4fa15562-812d-4d40-8d38-92212354c002";
         const CHAR_PASS_UUID   = "4fa15562-812d-4d40-8d38-92212354c003";
         const CHAR_INT_UUID    = "4fa15562-812d-4d40-8d38-92212354c004";
+        const CHAR_MAC_UUID    = "4fa15562-812d-4d40-8d38-92212354c005"; // New verified MAC reader
 
         async function sendConfiguration() {
             const name = document.getElementById('devName').value || "EcoSync Node";
@@ -78,15 +25,18 @@
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
 
-                status.innerText = "Writing registers to flash memory...";
+                status.innerText = "Reading physical device MAC address...";
+                const macChar = await service.getCharacteristic(CHAR_MAC_UUID);
+                const macValueDecoded = await macChar.readValue();
+                let trueHardwareMac = new TextDecoder().decode(macValueDecoded).trim().toUpperCase();
+                
+                status.innerText = "Writing network parameters to flash memory...";
                 await (await service.getCharacteristic(CHAR_SSID_UUID)).writeValue(new TextEncoder().encode(ssid));
                 await (await service.getCharacteristic(CHAR_PASS_UUID)).writeValue(new TextEncoder().encode(pass));
                 await (await service.getCharacteristic(CHAR_INT_UUID)).writeValue(new TextEncoder().encode(interval));
                 
                 status.innerText = "Syncing system data profile to cloud sheet...";
-                let cleanedMac = device.id.replace(/[^a-zA-Z0-9]/g, "").slice(-12).match(/.{1,2}/g).join(":").toUpperCase();
-                
-                let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(cleanedMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
+                let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(trueHardwareMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
                 
                 await new Promise((resolve) => {
                     const img = new Image();
@@ -104,5 +54,3 @@
             }
         }
     </script>
-</body>
-</html>
