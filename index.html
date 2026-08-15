@@ -52,74 +52,65 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
-        const SERVICE_UUID     = "4fa15562-812d-4d40-8d38-92212354c001";
-        const CHAR_SSID_UUID   = "4fa15562-812d-4d40-8d38-92212354c002";
-        const CHAR_PASS_UUID   = "4fa15562-812d-4d40-8d38-92212354c003";
-        const CHAR_INT_UUID    = "4fa15562-812d-4d40-8d38-92212354c004";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
+    const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
+    const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
+    const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
+    const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
+    const CHAR_MAC_UUID  = "4fa15562-812d-4d40-8d38-92212354c005"; // Added missing MAC characteristic
 
-        async function sendConfiguration() {
-            const name = document.getElementById('devName').value || "EcoSync Node";
-            const location = document.getElementById('devLoc').value || "Default Field";
-            const ssid = document.getElementById('ssid').value;
-            const pass = document.getElementById('pass').value;
-            const interval = document.getElementById('interval').value;
-            const s1 = document.getElementById('s1').value;
-            const s2 = document.getElementById('s2').value;
-            const s3 = document.getElementById('s3').value;
-            const s4 = document.getElementById('s4').value;
-            const status = document.getElementById('status');
+    async function sendConfiguration() {
+        const ssid = document.getElementById('ssid').value;
+        const pass = document.getElementById('password').value;
+        const interval = document.getElementById('interval').value;
+        const name = document.getElementById('node_name').value;
+        const location = document.getElementById('node_location').value;
+        const s1 = document.getElementById('s1_type').value;
+        const s2 = document.getElementById('s2_type').value;
+        const s3 = document.getElementById('s3_type').value;
+        const s4 = document.getElementById('s4_type').value;
+        const status = document.getElementById('status');
 
-            if (!ssid || !pass) {
-                status.style.color = "red";
-                status.innerText = "Error: Wi-Fi Name & Password required.";
-                return;
-            }
+        try {
+            status.style.color = "orange";
+            status.innerText = "Requesting Bluetooth Device...";
+            
+            const device = await navigator.bluetooth.requestDevice({ 
+                filters: [{ services: [SERVICE_UUID] }],
+                optionalServices: [SERVICE_UUID]
+            });
+            
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
 
-            try {
-                status.style.color = "orange";
-                status.innerText = "Pairing via Bluetooth...";
-                
-                // Scan explicitly for our custom service ID block
-                const device = await navigator.bluetooth.requestDevice({ 
-                    filters: [{ services: [SERVICE_UUID] }] 
-                });
-                
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
+            status.innerText = "Reading true hardware MAC from ESP32...";
+            const macChar = await service.getCharacteristic(CHAR_MAC_UUID);
+            const macValue = await macChar.readValue();
+            const trueHardwareMac = new TextDecoder().decode(macValue).trim().toUpperCase();
 
-                status.innerText = "Writing network credentials to flash memory...";
-                const ssidChar = await service.getCharacteristic(CHAR_SSID_UUID);
-                await ssidChar.writeValue(new TextEncoder().encode(ssid));
+            status.innerText = "Writing network credentials to ESP32...";
+            await (await service.getCharacteristic(CHAR_SSID_UUID)).writeValue(new TextEncoder().encode(ssid));
+            await (await service.getCharacteristic(CHAR_PASS_UUID)).writeValue(new TextEncoder().encode(pass));
+            await (await service.getCharacteristic(CHAR_INT_UUID)).writeValue(new TextEncoder().encode(interval));
+            
+            status.innerText = "Syncing node profile to cloud config...";
+            let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(trueHardwareMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
+            
+            await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = img.onerror = resolve;
+                img.src = syncUrl;
+                setTimeout(resolve, 2000);
+            });
 
-                const passChar = await service.getCharacteristic(CHAR_PASS_UUID);
-                await passChar.writeValue(new TextEncoder().encode(pass));
-
-                const intChar = await service.getCharacteristic(CHAR_INT_UUID);
-                await intChar.writeValue(new TextEncoder().encode(interval));
-                
-                status.innerText = "Syncing system data profile to cloud sheet...";
-                
-                // Fallback: If device.name isn't visible, create an isolated tracking ID from string parameters
-                let deviceIdentifier = device.name ? device.name.replace("ECOSYNC_", "").trim().toUpperCase() : "NODE_" + Math.floor(1000 + Math.random() * 9000);
-                
-                let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(deviceIdentifier)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
-                
-                await new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = img.onerror = resolve;
-                    img.src = syncUrl;
-                    setTimeout(resolve, 2000);
-                });
-
-                status.style.color = "green";
-                status.innerText = "Success! Complete System Provisioned.";
-                await server.disconnect();
-            } catch (error) {
-                status.style.color = "red";
-                status.innerText = "Error: " + error.message;
-            }
+            status.style.color = "green";
+            status.innerText = "Success! Node " + trueHardwareMac + " Provisioned.";
+            await server.disconnect();
+        } catch (error) {
+            status.style.color = "red";
+            status.innerText = "Error: " + error.message;
         }
-    </script>
+    }
+</script>
 </body>
 </html>
