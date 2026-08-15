@@ -23,10 +23,19 @@
         <input type="text" id="ssid" placeholder="Wi-Fi SSID">
         <input type="password" id="pass" placeholder="Wi-Fi Password">
         
-        <label for="interval">Initial Wake Interval</label>
+        <label for="interval">Reporting Schedule Interval</label>
         <select id="interval">
-            <option value="300">5 Minutes (Testing)</option>
-            <option value="3600" selected>1 Hour (Standard)</option>
+            <!-- Expanded Testing & Production Sleep Selections -->
+            <option value="60">1 Minute (Fast Debugging Only)</option>
+            <option value="300" selected>5 Minutes (Test Mode Baseline)</option>
+            <option value="600">10 Minutes</option>
+            <option value="900">15 Minutes</option>
+            <option value="1800">30 Minutes</option>
+            <option value="3600">1 Hour (Recommended Normal Operation)</option>
+            <option value="7200">2 Hours</option>
+            <option value="14400">4 Hours</option>
+            <option value="28800">8 Hours</option>
+            <option value="43200">12 Hours (Twice Daily Logging)</option>
         </select>
 
         <label>Hardware Port Configurations</label>
@@ -77,7 +86,6 @@
                 status.innerText = "Syncing system data profile to cloud sheet...";
                 let cleanedMac = device.id.replace(/[^a-zA-Z0-9]/g, "").slice(-12).match(/.{1,2}/g).join(":").toUpperCase();
                 
-                // Triggers background sheet registration directly from phone web parameters
                 let syncUrl = `${GOOGLE_SCRIPT_URL}?action=init_node&mac=${encodeURIComponent(cleanedMac)}&name=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}&interval=${interval}&s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`;
                 
                 await new Promise((resolve) => {
