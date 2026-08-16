@@ -5,76 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoSync Node Provisioning Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 450px; margin: 20px auto; padding: 15px; background: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h2 { text-align: center; color: #111; margin-bottom: 20px; font-size: 22px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 480px; margin: 20px auto; padding: 15px; background: #f4f7f6; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #111; margin-bottom: 20px; font-size: 22px; border-bottom: 2px solid #007BFF; padding-bottom: 10px; }
+        .section-title { font-size: 14px; font-weight: bold; color: #007BFF; text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.5px; }
         .form-group { margin-bottom: 14px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #444; }
         input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: #fafafa; }
         input:focus, select:focus { border-color: #007BFF; outline: none; background: #fff; }
+        .custom-sensor-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        .custom-sensor-box input { flex: 1; }
+        .custom-sensor-box button { width: auto; margin: 0; padding: 10px 15px; background: #28a745; font-size: 14px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .custom-sensor-box button:hover { background: #218838; }
         button { width: 100%; background: #007BFF; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
         button:hover { background: #0056b3; }
         #status { margin-top: 20px; text-align: center; font-weight: bold; font-size: 14px; line-height: 1.4; }
     </style>
 </head>
 <body>
-
     <div class="card">
         <h2>EcoSync Provisioning</h2>
-        
+        <div class="section-title">Deployment Info</div>
+        <div class="form-group"><label>Sensor Identity Tag</label><input type="text" id="node_name" value="EcoSync Tank Node"></div>
+        <div class="form-group"><label>Location Placement Description</label><input type="text" id="node_location" value="Main Tank Alpha"></div>
+        <div class="section-title">Network Parameters</div>
+        <div class="form-group"><label>Wi-Fi SSID (Network Name)</label><input type="text" id="ssid" placeholder="e.g. GO BUCKS"></div>
+        <div class="form-group"><label>Wi-Fi Password</label><input type="password" id="password" placeholder="Enter network password"></div>
         <div class="form-group">
-            <label>Wi-Fi SSID (Network Name)</label>
-            <input type="text" id="ssid" placeholder="e.g. GO BUCKS">
+            <label>Sleep Reporting Interval</label>
+            <select id="interval">
+                <option value="60">1 Minute (Fast Debugging Only)</option>
+                <option value="300">5 Minutes (Test Mode Baseline)</option>
+                <option value="600">10 Minutes</option>
+                <option value="900">15 Minutes</option>
+                <option value="1800">30 Minutes</option>
+                <option value="3600" selected>1 Hour (Recommended Normal Operation)</option>
+                <option value="7200">2 Hours</option>
+                <option value="14400">4 Hours</option>
+                <option value="28800">8 Hours</option>
+                <option value="43200">12 Hours (Twice Daily Logging)</option>
+            </select>
         </div>
-        
-        <div class="form-group">
-            <label>Wi-Fi Password</label>
-            <input type="password" id="password" placeholder="Enter network password">
-        </div>
-        
-        <div class="form-group">
-            <label>Sleep Reporting Interval (Seconds)</label>
-            <input type="number" id="interval" value="60">
-        </div>
-
-        <div class="form-group">
-            <label>Sensor Identity Tag</label>
-            <input type="text" id="node_name" value="EcoSync Tank Node">
-        </div>
-
-        <div class="form-group">
-            <label>Location Placement Description</label>
-            <input type="text" id="node_location" value="Main Tank Alpha">
-        </div>
-
-        <div class="form-group">
-            <label>Sensor Port 1 Configuration</label>
-            <select id="s1_type"><option value="temperature">Temperature</option><option value="dissolved oxygen">Dissolved Oxygen</option><option value="water flow">Water Flow</option><option value="air flow">Air Flow</option></select>
-        </div>
-        <div class="form-group">
-            <label>Sensor Port 2 Configuration</label>
-            <select id="s2_type"><option value="dissolved oxygen">Dissolved Oxygen</option><option value="temperature">Temperature</option></select>
-        </div>
-        <div class="form-group">
-            <label>Sensor Port 3 Configuration</label>
-            <select id="s3_type"><option value="water flow">Water Flow</option><option value="temperature">Temperature</option></select>
-        </div>
-        <div class="form-group">
-            <label>Sensor Port 4 Configuration</label>
-            <select id="s4_type"><option value="air flow">Air Flow</option><option value="temperature">Temperature</option></select>
-        </div>
-
-        <button onclick="sendConfiguration()">Initialize & Provision Node</button>
+        <div class="section-title">Dynamic Sensor Registry</div>
+        <label>Add Custom Sensor Type to List</label>
+        <div class="custom-sensor-box"><input type="text" id="new_sensor_name" placeholder="e.g. pH, Pressure, Humidity"><button type="button" onclick="addNewSensorType()">Add</button></div>
+        <div class="form-group"><label>Sensor Port 1 Configuration</label><select id="s1_type" class="sensor-selector"></select></div>
+        <div class="form-group"><label>Sensor Port 2 Configuration</label><select id="s2_type" class="sensor-selector"></select></div>
+        <div class="form-group"><label>Sensor Port 3 Configuration</label><select id="s3_type" class="sensor-selector"></select></div>
+        <div class="form-group"><label>Sensor Port 4 Configuration</label><select id="s4_type" class="sensor-selector"></select></div>
+        <button type="button" onclick="sendConfiguration()">Initialize & Provision Node</button>
         <div id="status"></div>
     </div>
-
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby946Ht-HFXWrBbqfXempWgB2HQF9xej4fDdx4LkWFJKgFHxBlZ2NU-ZqssQWDhbfE/exec";
-    const SERVICE_UUID     = "4fa15562-812d-4d40-8d38-92212354c001";
-    const CHAR_SSID_UUID   = "4fa15562-812d-4d40-8d38-92212354c002";
-    const CHAR_PASS_UUID   = "4fa15562-812d-4d40-8d38-92212354c003";
-    const CHAR_INT_UUID    = "4fa15562-812d-4d40-8d38-92212354c004";
-    const CHAR_MAC_UUID    = "4fa15562-812d-4d40-8d38-92212354c005";
+    const SERVICE_UUID = "4fa15562-812d-4d40-8d38-92212354c001";
+    const CHAR_SSID_UUID = "4fa15562-812d-4d40-8d38-92212354c002";
+    const CHAR_PASS_UUID = "4fa15562-812d-4d40-8d38-92212354c003";
+    const CHAR_INT_UUID  = "4fa15562-812d-4d40-8d38-92212354c004";
+    const CHAR_MAC_UUID  = "4fa15562-812d-4d40-8d38-92212354c005";
+
+    let userSensorOptions = ["temperature", "dissolved oxygen", "water flow", "air flow"];
+
+    function updateDropdownMenus() {
+        const selectors = document.querySelectorAll('.sensor-selector');
+        selectors.forEach((select, index) => {
+            const savedValue = select.value;
+            select.innerHTML = "";
+            userSensorOptions.forEach(option => {
+                const optElement = document.createElement('option');
+                optElement.value = option;
+                optElement.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+                select.appendChild(optElement);
+            });
+            if (savedValue && userSensorOptions.includes(savedValue)) {
+                select.value = savedValue;
+            } else {
+                if (index === 0) select.value = "temperature";
+                if (index === 1) select.value = "dissolved oxygen";
+                if (index === 2) select.value = "water flow";
+                if (index === 3) select.value = "air flow";
+            }
+        });
+    }
+
+    function addNewSensorType() {
+        const inputField = document.getElementById('new_sensor_name');
+        const cleanName = inputField.value.trim().toLowerCase();
+        if (cleanName === "") { alert("Please type a valid sensor name."); return; }
+        if (userSensorOptions.includes(cleanName)) { alert("This sensor type already exists."); return; }
+        userSensorOptions.push(cleanName);
+        updateDropdownMenus();
+        inputField.value = "";
+    }
 
     async function sendConfiguration() {
         const ssid = document.getElementById('ssid').value;
@@ -88,25 +110,21 @@
         const s4 = document.getElementById('s4_type').value;
         const status = document.getElementById('status');
 
+        if (!ssid || !pass) { status.style.color = "#dc3545"; status.innerText = "Error: Credentials required."; return; }
+
         try {
-            status.style.color = "orange";
-            status.innerText = "Searching for ECOSYNC_NODE...";
-            
-            const device = await navigator.bluetooth.requestDevice({ 
-                filters: [{ services: [SERVICE_UUID] }],
-                optionalServices: [SERVICE_UUID]
-            });
-            
-            status.innerText = "Establishing secure GATT connection...";
+            status.style.color = "orange"; status.innerText = "Searching for ECOSYNC_NODE...";
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }], optionalServices: [SERVICE_UUID] });
+            status.innerText = "Connecting GATT server...";
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService(SERVICE_UUID);
 
-            status.innerText = "Querying microcontroller physical MAC address...";
+            status.innerText = "Reading hardware MAC Address...";
             const macChar = await service.getCharacteristic(CHAR_MAC_UUID);
             const macValue = await macChar.readValue();
             const trueHardwareMac = new TextDecoder().decode(macValue).trim().toUpperCase();
 
-            status.innerText = "Writing telemetry parameters to hardware flash memory...";
+            status.innerText = "Writing properties to flash...";
             await (await service.getCharacteristic(CHAR_SSID_UUID)).writeValue(new TextEncoder().encode(ssid));
             await (await service.getCharacteristic(CHAR_PASS_UUID)).writeValue(new TextEncoder().encode(pass));
             await (await service.getCharacteristic(CHAR_INT_UUID)).writeValue(new TextEncoder().encode(interval));
@@ -125,10 +143,10 @@
             status.innerText = `Success! True Node [${trueHardwareMac}] Synchronized & Operational.`;
             await server.disconnect();
         } catch (error) {
-            status.style.color = "#dc3545";
-            status.innerText = "Execution Error: " + error.message;
+            status.style.color = "#dc3545"; status.innerText = "Execution Error: " + error.message;
         }
     }
+    updateDropdownMenus();
 </script>
 </body>
 </html>
